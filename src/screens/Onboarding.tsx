@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { apiFetch } from "../api/client";
+import { supabase } from "../api/supabase";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
 import { useSession } from "../state/session";
@@ -11,13 +11,13 @@ type OnboardingProps = {
 };
 
 export const Onboarding = ({ onComplete }: OnboardingProps) => {
-  const { token } = useSession();
+  const { user } = useSession();
   const [age, setAge] = useState("");
   const [identity, setIdentity] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const submit = async () => {
-    if (!token) {
+    if (!user) {
       setError("Please sign in again.");
       return;
     }
@@ -33,20 +33,25 @@ export const Onboarding = ({ onComplete }: OnboardingProps) => {
       return;
     }
 
-    try {
-      setError(null);
-      await apiFetch("/auth/profile", {
-        token,
-        method: "POST",
-        body: {
-          age: parsedAge,
-          identity: identity.trim()
-        }
-      });
-      onComplete();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save your profile");
+    const usernameFromMetadata = (user.user_metadata.username as string | undefined)?.trim().toLowerCase() ?? null;
+
+    const { error: upsertError } = await supabase.from("profiles").upsert(
+      {
+        user_id: user.id,
+        username: usernameFromMetadata,
+        age: parsedAge,
+        identity: identity.trim(),
+        onboarding_completed: true
+      },
+      { onConflict: "user_id" }
+    );
+
+    if (upsertError) {
+      setError(upsertError.message);
+      return;
     }
+
+    onComplete();
   };
 
   return (

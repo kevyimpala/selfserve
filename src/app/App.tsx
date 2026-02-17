@@ -1,25 +1,23 @@
 import { useEffect, useState } from "react";
 import { SafeAreaView, StyleSheet, Text, View } from "react-native";
-import { apiFetch } from "../api/client";
+import { supabase } from "../api/supabase";
 import { SessionProvider } from "../state/session";
 import { colors } from "../utils/theme";
 import { AppRoutes } from "./routes";
-
-type HealthResponse = {
-  status: string;
-};
 
 export default function App() {
   const [health, setHealth] = useState("checking...");
 
   useEffect(() => {
     const run = async () => {
-      try {
-        const data = await apiFetch<HealthResponse>("/health");
-        setHealth(data.status);
-      } catch {
-        setHealth("offline");
+      const hasEnv = Boolean(process.env.EXPO_PUBLIC_SUPABASE_URL && process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY);
+      if (!hasEnv) {
+        setHealth("configure-supabase-env");
+        return;
       }
+
+      const { error } = await supabase.auth.getSession();
+      setHealth(error ? "supabase-error" : "supabase-ok");
     };
 
     void run();

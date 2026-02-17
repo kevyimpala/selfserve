@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { apiFetch } from "../api/client";
+import { supabase } from "../api/supabase";
 import { Button } from "../components/Button";
 import { IngredientList, type Ingredient } from "../components/IngredientList";
 import { Input } from "../components/Input";
@@ -8,37 +8,45 @@ import { useSession } from "../state/session";
 import { colors } from "../utils/theme";
 import { isNonEmpty } from "../utils/validation";
 
-type PantryResponse = {
-  items: Ingredient[];
+type PantryRow = {
+  id: number;
+  name: string;
+  quantity: number;
 };
 
 export const Pantry = () => {
-  const { token } = useSession();
+  const { user } = useSession();
   const [items, setItems] = useState<Ingredient[]>([]);
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [error, setError] = useState<string | null>(null);
 
   const loadItems = async () => {
-    if (!token) {
+    if (!user) {
       setItems([]);
       return;
     }
 
-    try {
-      const data = await apiFetch<PantryResponse>("/pantry", { token });
-      setItems(data.items);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load pantry");
+    const { data, error: loadError } = await supabase
+      .from("pantry_items")
+      .select("id, name, quantity")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (loadError) {
+      setError(loadError.message);
+      return;
     }
+
+    setItems((data ?? []) as Ingredient[]);
   };
 
   useEffect(() => {
     void loadItems();
-  }, [token]);
+  }, [user?.id]);
 
   const addItem = async () => {
-    if (!token) {
+    if (!user) {
       setError("Login first");
       return;
     }
@@ -47,22 +55,32 @@ export const Pantry = () => {
       return;
     }
 
-    try {
-      setError(null);
-      await apiFetch("/pantry", {
-        token,
-        method: "POST",
-        body: {
-          name: name.trim(),
-          quantity: Number(quantity) || 1
-        }
-      });
-      setName("");
-      setQuantity("1");
-      await loadItems();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not add item");
+    const safeQuantity = Number(quantity) || 1;
+    const { error: insertError } = await supabase.from("pantry_items").insert({
+      user_id: user.id,
+      name: name.trim(),
+      quantity: safeQuantity
+    });
+
+    if (insertError) {
+      setError(insertError.message);
+      return;
     }
+
+    setError(null);
+    setName("");
+    setQuantity("1");
+    await loadItems();
+  };
+
+  const removeItem = async (item: PantryRow) => {
+    const { error: deleteError } = await supabase.from("pantry_items").delete().eq("id", item.id).eq("user_id", user!.id);
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+
+    await loadItems();
   };
 
   return (
@@ -74,6 +92,9 @@ export const Pantry = () => {
       <Button label="Add Ingredient" onPress={addItem} />
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <IngredientList items={items} />
+      {items.length > 0 ? (
+        <Button label="Remove Last Item" onPress={() => void removeItem(items[0] as PantryRow)} variant="ghost" />
+      ) : null}
     </View>
   );
 };

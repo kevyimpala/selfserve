@@ -1,20 +1,12 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { apiFetch } from "../api/client";
+import { supabase } from "../api/supabase";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
-import { useSession } from "../state/session";
 import { colors } from "../utils/theme";
 import { isStrongEnoughPassword, isValidEmail } from "../utils/validation";
 
 export type AuthMode = "login" | "signup";
-
-type AuthResponse = {
-  token: string;
-  user: {
-    onboardingCompleted?: boolean;
-  };
-};
 
 type LoginProps = {
   mode: AuthMode;
@@ -22,126 +14,124 @@ type LoginProps = {
   onAuthSuccess: (payload: { mode: AuthMode; onboardingCompleted: boolean }) => void;
 };
 
+type ProfileRow = {
+  onboarding_completed: boolean | null;
+};
+
 export const Login = ({ mode, onModeChange, onAuthSuccess }: LoginProps) => {
-  const { setToken } = useSession();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
-  const [forgotCode, setForgotCode] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [signupStage, setSignupStage] = useState<"collect" | "verify">("collect");
-  const [forgotStage, setForgotStage] = useState<"request" | "reset">("request");
   const [isForgotMode, setIsForgotMode] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setSignupStage("collect");
-    setIsForgotMode(false);
-    setForgotStage("request");
-    setVerificationCode("");
-    setForgotCode("");
-    setNewPassword("");
-    setInfo(null);
-    setError(null);
-  }, [mode]);
+  const getOnboardingCompleted = async (userId: string) => {
+    const { data, error: profileError } = await supabase
+      .from("profiles")
+      .select("onboarding_completed")
+      .eq("user_id", userId)
+      .maybeSingle<ProfileRow>();
 
-  const resendVerificationCode = async () => {
+    if (profileError && profileError.code !== "PGRST116") {
+      throw new Error(profileError.message);
+    }
+
+    return Boolean(data?.onboarding_completed);
+  };
+
+  const resendSignupEmail = async () => {
     if (!isValidEmail(email)) {
       setError("Enter your account email first.");
       return;
     }
 
-    try {
-      setError(null);
-      await apiFetch<{ message: string }>("/auth/resend-verification", {
-        method: "POST",
-        body: { email }
-      });
-      setInfo("Verification code resent. Check your inbox.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not resend verification code");
+    const { error: resendError } = await supabase.auth.resend({
+      type: "signup",
+      email
+    });
+
+    if (resendError) {
+      setError(resendError.message);
+      return;
     }
+
+    setInfo("Verification email resent. Check your inbox.");
   };
 
-  const resendResetCode = async () => {
+  const resendResetEmail = async () => {
     if (!isValidEmail(email)) {
       setError("Enter your account email first.");
       return;
     }
 
-    try {
-      setError(null);
-      await apiFetch<{ message: string }>("/auth/forgot-password", {
-        method: "POST",
-        body: { email }
-      });
-      setInfo("Reset code resent. Check your inbox.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not resend reset code");
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email);
+    if (resetError) {
+      setError(resetError.message);
+      return;
     }
-  };
 
-  const submitLogin = async () => {
-    const authData = await apiFetch<AuthResponse>("/auth/login", {
-      method: "POST",
-      body: { email, password }
-    });
-    setToken(authData.token);
-    onAuthSuccess({
-      mode: "login",
-      onboardingCompleted: Boolean(authData.user.onboardingCompleted)
-    });
+    setInfo("Password reset email resent.");
   };
 
   const submitSignup = async () => {
-    if (signupStage === "collect") {
-      await apiFetch<{ message: string }>("/auth/signup", {
-        method: "POST",
-        body: { email, username, password }
-      });
-      setSignupStage("verify");
-      setInfo("We emailed a verification code. Enter it to activate your account.");
-      return;
+    const normalizedUsername = username.trim().toLowerCase();
+
+    const { data: existingUser, error: lookupError } = await supabase
+      .from("profiles")
+      .select("user_id")
+      .eq("username", normalizedUsername)
+      .maybeSingle();
+
+    if (lookupError && lookupError.code !== "PGRST116") {
+      throw new Error(lookupError.message);
     }
 
-    const authData = await apiFetch<AuthResponse>("/auth/verify-email", {
-      method: "POST",
-      body: { email, code: verificationCode }
-    });
-    setToken(authData.token);
-    onAuthSuccess({
-      mode: "signup",
-      onboardingCompleted: Boolean(authData.user.onboardingCompleted)
-    });
-  };
-
-  const submitForgot = async () => {
-    if (forgotStage === "request") {
-      await apiFetch<{ message: string }>("/auth/forgot-password", {
-        method: "POST",
-        body: { email }
-      });
-      setForgotStage("reset");
-      setInfo("If your email exists, we sent a reset code. Enter it with your new password.");
-      return;
+    if (existingUser) {
+      throw new Error("Username already taken");
     }
 
-    await apiFetch<{ message: string }>("/auth/reset-password", {
-      method: "POST",
-      body: {
-        email,
-        code: forgotCode,
-        newPassword
+    const { data, error: signupError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          username: normalizedUsername
+        }
       }
     });
 
-    setIsForgotMode(false);
-    setForgotStage("request");
-    setForgotCode("");
-    setNewPassword("");
-    setInfo("Password reset. You can now log in.");
+    if (signupError) {
+      throw new Error(signupError.message);
+    }
+
+    if (!data.session) {
+      setInfo("Account created. Check your email and click the verification link, then log in.");
+      return;
+    }
+
+    onAuthSuccess({ mode: "signup", onboardingCompleted: false });
+  };
+
+  const submitLogin = async () => {
+    const { data, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (loginError) {
+      throw new Error(loginError.message);
+    }
+
+    const userId = data.user?.id;
+    const onboardingCompleted = userId ? await getOnboardingCompleted(userId) : false;
+    onAuthSuccess({ mode: "login", onboardingCompleted });
+  };
+
+  const submitForgot = async () => {
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email);
+    if (resetError) {
+      throw new Error(resetError.message);
+    }
+
+    setInfo("Password reset email sent. Follow the link in your inbox.");
   };
 
   const submit = async () => {
@@ -150,30 +140,20 @@ export const Login = ({ mode, onModeChange, onAuthSuccess }: LoginProps) => {
       return;
     }
 
-    const requiresPassword = !isForgotMode || forgotStage === "reset";
-    if (requiresPassword && !isStrongEnoughPassword(isForgotMode ? newPassword : password)) {
+    if (!isForgotMode && !isStrongEnoughPassword(password)) {
       setError("Password must be at least 6 characters.");
       return;
     }
 
-    if (!isForgotMode && mode === "signup" && signupStage === "collect" && !username.trim()) {
+    if (!isForgotMode && mode === "signup" && !username.trim()) {
       setError("Username is required.");
-      return;
-    }
-
-    if (!isForgotMode && mode === "signup" && signupStage === "verify" && !verificationCode.trim()) {
-      setError("Enter the verification code sent to your email.");
-      return;
-    }
-
-    if (isForgotMode && forgotStage === "reset" && !forgotCode.trim()) {
-      setError("Enter the reset code from your email.");
       return;
     }
 
     try {
       setError(null);
       setInfo(null);
+
       if (isForgotMode) {
         await submitForgot();
         return;
@@ -201,55 +181,22 @@ export const Login = ({ mode, onModeChange, onAuthSuccess }: LoginProps) => {
 
       <Input value={email} onChangeText={setEmail} placeholder="Email" autoCapitalize="none" keyboardType="email-address" />
 
-      {isForgotMode ? (
-        <>
-          {forgotStage === "reset" ? (
-            <>
-              <Input value={forgotCode} onChangeText={setForgotCode} placeholder="Reset code" keyboardType="number-pad" />
-              <Input value={newPassword} onChangeText={setNewPassword} placeholder="New password" secureTextEntry />
-              <Button label="Resend Code" onPress={resendResetCode} variant="ghost" />
-            </>
-          ) : null}
-        </>
-      ) : (
-        <>
-          {isSignup && signupStage === "collect" ? (
-            <Input value={username} onChangeText={setUsername} placeholder="Username" autoCapitalize="none" />
-          ) : null}
+      {!isForgotMode && isSignup ? (
+        <Input value={username} onChangeText={setUsername} placeholder="Username" autoCapitalize="none" />
+      ) : null}
 
-          {isSignup && signupStage === "verify" ? (
-            <>
-              <Input
-                value={verificationCode}
-                onChangeText={setVerificationCode}
-                placeholder="Email verification code"
-                keyboardType="number-pad"
-              />
-              <Button label="Resend Code" onPress={resendVerificationCode} variant="ghost" />
-            </>
-          ) : (
-            <Input value={password} onChangeText={setPassword} placeholder="Password" secureTextEntry />
-          )}
-        </>
-      )}
+      {!isForgotMode ? <Input value={password} onChangeText={setPassword} placeholder="Password" secureTextEntry /> : null}
 
       {info ? <Text style={styles.info}>{info}</Text> : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <Button
-        label={
-          isForgotMode
-            ? forgotStage === "request"
-              ? "Send Reset Code"
-              : "Reset Password"
-            : isSignup
-              ? signupStage === "collect"
-                ? "Create Account"
-                : "Verify Account"
-              : "Sign In"
-        }
+        label={isForgotMode ? "Send Reset Email" : isSignup ? "Create Account" : "Sign In"}
         onPress={submit}
       />
+
+      {isSignup && !isForgotMode ? <Button label="Resend Verification" onPress={resendSignupEmail} variant="ghost" /> : null}
+      {isForgotMode ? <Button label="Resend Reset Email" onPress={resendResetEmail} variant="ghost" /> : null}
 
       {!isForgotMode ? (
         <Button
@@ -263,9 +210,6 @@ export const Login = ({ mode, onModeChange, onAuthSuccess }: LoginProps) => {
         label={isForgotMode ? "Back to login" : "Forgot my password"}
         onPress={() => {
           setIsForgotMode((current) => !current);
-          setForgotStage("request");
-          setForgotCode("");
-          setNewPassword("");
           setInfo(null);
           setError(null);
         }}

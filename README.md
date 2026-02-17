@@ -1,91 +1,70 @@
 # HomeCook / Self Serve
 
-Expo web/mobile frontend + Express API backend in one repo.
+Expo frontend with Supabase-backed auth and data.
+
+## Migration Status
+
+Completed:
+- Auth (signup/login/verify/reset) via Supabase Auth
+- Profile onboarding (age + identity) via `profiles`
+- Pantry CRUD via `pantry_items`
+- Upload persistence via `uploads`
+- Barcode + photo parsing via Supabase Edge Functions
 
 ## One-Time Setup
 
 1. Use this folder only:
    - `C:\Users\Kevin Meyer\homecook`
-2. Use Node 20 (project is pinned in `.nvmrc`).
-3. Install dependencies:
+2. Use Node 20 (`.nvmrc`).
+3. Install deps:
    - `npm install`
-   - `npm install --workspace server`
-4. Copy env file:
+4. Copy env:
    - `copy .env.example .env`
+5. Set in `.env`:
+   - `EXPO_PUBLIC_SUPABASE_URL`
+   - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+6. In Supabase SQL editor, run:
+   - `docs/supabase.sql`
 
-## Daily Local Run
+## Supabase Auth Settings
 
-Use one command from repo root:
+In Supabase dashboard:
+1. Authentication -> Providers -> Email: enabled
+2. Authentication -> URL Configuration:
+   - Add your local and production site URLs
+3. Authentication -> Email Templates:
+   - Customize verify/reset messaging as needed
+
+## Edge Functions (Required)
+
+Deploy these two functions:
+- `nutrition-barcode`
+- `vision-parse`
+
+Template files:
+- `docs/edge-functions/nutrition-barcode.ts`
+- `docs/edge-functions/vision-parse.ts`
+
+If using Supabase CLI:
+1. `supabase login`
+2. `supabase link --project-ref <your-project-ref>`
+3. Create function files under `supabase/functions/<name>/index.ts`
+4. `supabase functions deploy nutrition-barcode`
+5. `supabase functions deploy vision-parse`
+
+## Local Run
 
 - `npm run dev`
 
-This starts:
-- backend API (`http://localhost:3000`)
-- Expo web dev server
+## CI
 
-If needed, backend only:
-- `npm run dev:server`
+- Workflow: `.github/workflows/ci.yml`
+- Command: `npm run ci`
 
-## Environment Variables
+## Deploy (Vercel)
 
-From `.env.example`:
-
-- `PORT=3000`
-- `JWT_SECRET=change-me`
-- `DATABASE_PATH=./homecook.db`
-- `RESEND_API_KEY=`
-- `EMAIL_FROM=Self Serve <onboarding@resend.dev>`
-- `EXPO_PUBLIC_API_BASE_URL=http://localhost:3000`
-
-`EXPO_PUBLIC_API_BASE_URL` is used by the frontend API client so local/prod URLs can differ without code edits.
-
-## CI (GitHub Actions)
-
-Workflow file: `.github/workflows/ci.yml`
-
-On each push/PR it runs:
-- `npm ci`
-- `npm run ci` (root typecheck + server typecheck + server build)
-
-## Deploy Setup
-
-### Frontend (Vercel)
-
-Config file: `vercel.json`
-
-- Build command: `npx expo export --platform web`
-- Output directory: `dist`
-
-Set Vercel env var:
-- `EXPO_PUBLIC_API_BASE_URL=https://<your-render-api-domain>`
-
-### Backend (Render)
-
-Config file: `render.yaml`
-
-- Service root: `server/`
-- Build: `npm ci && npm run build`
-- Start: `npm run start`
-- Persistent disk mounted at `/var/data`
-- Uses `DATABASE_PATH=/var/data/homecook.db`
-
-Set Render env vars:
-- `JWT_SECRET`
-- `RESEND_API_KEY`
-- `EMAIL_FROM`
-
-## Simple Live Workflow
-
-1. Make UI/API changes locally.
-2. Run `npm run dev` and check locally.
-3. Commit and push to GitHub.
-4. CI runs automatically.
-5. Vercel/Render auto-deploy from `main`.
-6. Open live site URL.
-
-## Auth Features Included
-
-- Signup with `email + username + password`
-- Email verification code (+ resend)
-- Forgot password code (+ resend)
-- First-login onboarding: age + identity
+- Build: `npx expo export --platform web --non-interactive`
+- Output: `dist`
+- Environment variables:
+  - `EXPO_PUBLIC_SUPABASE_URL`
+  - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
