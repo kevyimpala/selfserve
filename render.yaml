@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: selfserve-api
+    runtime: node
+    rootDir: server
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 20
+      - key: PORT
+        value: 10000
+      - key: DATABASE_PATH
+        value: /var/data/homecook.db
+    disk:
+      name: homecook-data
+      mountPath: /var/data
+      sizeGB: 1

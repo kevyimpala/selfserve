@@ -18,6 +18,39 @@ export const getDb = async () => {
         );
       `);
 
+      const userColumns = await db.all<{ name: string }[]>("PRAGMA table_info(users)");
+      const userColumnNames = new Set(userColumns.map((column) => column.name));
+
+      if (!userColumnNames.has("username")) {
+        await db.exec("ALTER TABLE users ADD COLUMN username TEXT;");
+      }
+      if (!userColumnNames.has("age")) {
+        await db.exec("ALTER TABLE users ADD COLUMN age INTEGER;");
+      }
+      if (!userColumnNames.has("identity")) {
+        await db.exec("ALTER TABLE users ADD COLUMN identity TEXT;");
+      }
+      if (!userColumnNames.has("onboarding_completed")) {
+        await db.exec("ALTER TABLE users ADD COLUMN onboarding_completed INTEGER NOT NULL DEFAULT 0;");
+      }
+      if (!userColumnNames.has("email_verified")) {
+        await db.exec("ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0;");
+      }
+      if (!userColumnNames.has("verification_code")) {
+        await db.exec("ALTER TABLE users ADD COLUMN verification_code TEXT;");
+      }
+      if (!userColumnNames.has("verification_expires_at")) {
+        await db.exec("ALTER TABLE users ADD COLUMN verification_expires_at TEXT;");
+      }
+      if (!userColumnNames.has("password_reset_code")) {
+        await db.exec("ALTER TABLE users ADD COLUMN password_reset_code TEXT;");
+      }
+      if (!userColumnNames.has("password_reset_expires_at")) {
+        await db.exec("ALTER TABLE users ADD COLUMN password_reset_expires_at TEXT;");
+      }
+
+      await db.exec("CREATE UNIQUE INDEX IF NOT EXISTS users_username_unique ON users(username);");
+
       await db.exec(`
         CREATE TABLE IF NOT EXISTS pantry_items (
           id INTEGER PRIMARY KEY AUTOINCREMENT,

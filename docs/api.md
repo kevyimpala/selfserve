@@ -2,7 +2,7 @@
 
 Base URL: `http://localhost:3000`
 
-All endpoints except `/health` require `Authorization: Bearer <token>`.
+Protected endpoints require `Authorization: Bearer <token>`.
 
 ## Health
 
@@ -12,33 +12,39 @@ All endpoints except `/health` require `Authorization: Bearer <token>`.
 ## Auth
 
 - `POST /auth/signup`
-  - Body: `{ "email": "user@example.com", "password": "secret123" }`
-  - Response: `{ "token": "...", "user": { "id": 1, "email": "user@example.com" } }`
+  - Body: `{ "email": "user@example.com", "username": "chefkevin", "password": "secret123" }`
+  - Response: `{ "message": "Account created. Check your email for your verification code.", "email": "user@example.com" }`
+- `POST /auth/resend-verification`
+  - Body: `{ "email": "user@example.com" }`
+- `POST /auth/verify-email`
+  - Body: `{ "email": "user@example.com", "code": "123456" }`
+  - Response: `{ "token": "...", "user": { "id": 1, "email": "user@example.com", "username": "chefkevin", "onboardingCompleted": false } }`
 - `POST /auth/login`
   - Body: `{ "email": "user@example.com", "password": "secret123" }`
-  - Response: `{ "token": "...", "user": { "id": 1, "email": "user@example.com" } }`
+  - Note: email must be verified first.
+- `POST /auth/forgot-password`
+  - Body: `{ "email": "user@example.com" }`
+- `POST /auth/reset-password`
+  - Body: `{ "email": "user@example.com", "code": "123456", "newPassword": "newSecret123" }`
+- `POST /auth/profile` (protected)
+  - Body: `{ "age": 29, "identity": "Non-binary, they/them" }`
+- `GET /auth/me` (protected)
 
 ## Pantry
 
-- `GET /pantry`
-  - Response: `{ "items": [{ "id": 1, "name": "Tomato", "quantity": 2, "created_at": "..." }] }`
-- `POST /pantry`
+- `GET /pantry` (protected)
+- `POST /pantry` (protected)
   - Body: `{ "name": "Tomato", "quantity": 2 }`
-  - Response: `{ "item": { "id": 1, "name": "Tomato", "quantity": 2 } }`
-- `DELETE /pantry`
+- `DELETE /pantry` (protected)
   - Body: `{ "id": 1 }` or `{ "name": "Tomato" }`
-  - Response: `{ "deleted": 1 }`
 
 ## Uploads
 
-- `POST /uploads`
+- `POST /uploads` (protected)
   - Body: `{ "imageBase64": "<base64>" }`
-  - Response: `{ "id": 1, "ingredients": ["tomato", "onion", "garlic"] }`
-- `GET /uploads/:id`
-  - Response: `{ "id": 1, "imageBase64": "<base64>", "ingredients": ["..."], "createdAt": "..." }`
+- `GET /uploads/:id` (protected)
 
 ## Nutrition
 
-- `POST /nutrition/barcode`
+- `POST /nutrition/barcode` (protected)
   - Body: `{ "barcode": "012345678905" }`
-  - Response: `{ "barcode": "...", "productName": "...", "calories": 120, "protein": 5, "carbs": 14, "fat": 3 }`

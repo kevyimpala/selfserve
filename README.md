@@ -1,83 +1,91 @@
-# HomeCook
+# HomeCook / Self Serve
 
-Shared frontend (Expo for mobile + web) and backend API (Express + SQLite) scaffold.
+Expo web/mobile frontend + Express API backend in one repo.
 
-## Project Structure
+## One-Time Setup
 
-```text
-homecook/
-  README.md
-  .env.example
-  package.json
-  tsconfig.json
-  docs/
-    api.md
-  server/
-    package.json
-    tsconfig.json
-    src/
-      index.ts
-      config.ts
-      db.ts
-      auth.ts
-      routes/
-        auth.ts
-        pantry.ts
-        uploads.ts
-        nutrition.ts
-      services/
-        vision.ts
-        nutrition.ts
-  src/
-    app/
-      App.tsx
-      routes.tsx
-    screens/
-      Home.tsx
-      Login.tsx
-      Pantry.tsx
-      Barcode.tsx
-      Photo.tsx
-    components/
-      Button.tsx
-      Input.tsx
-      IngredientList.tsx
-    api/
-      client.ts
-    state/
-      session.ts
-    hooks/
-      useCamera.ts
-      useBarcodeScanner.ts
-    utils/
-      validation.ts
-      format.ts
-    platform/
-      index.native.tsx
-      index.web.tsx
-```
-
-## Quick Start
-
-1. Copy `.env.example` to `.env` and update values.
-2. Install dependencies from project root:
+1. Use this folder only:
+   - `C:\Users\Kevin Meyer\homecook`
+2. Use Node 20 (project is pinned in `.nvmrc`).
+3. Install dependencies:
    - `npm install`
+   - `npm install --workspace server`
+4. Copy env file:
+   - `copy .env.example .env`
 
-## Run Commands
+## Daily Local Run
 
-Backend:
+Use one command from repo root:
 
+- `npm run dev`
+
+This starts:
+- backend API (`http://localhost:3000`)
+- Expo web dev server
+
+If needed, backend only:
 - `npm run dev:server`
 
-Frontend:
+## Environment Variables
 
-- `npm run dev:app`
-- `npm run dev:web`
+From `.env.example`:
 
-## Notes
+- `PORT=3000`
+- `JWT_SECRET=change-me`
+- `DATABASE_PATH=./homecook.db`
+- `RESEND_API_KEY=`
+- `EMAIL_FROM=Self Serve <onboarding@resend.dev>`
+- `EXPO_PUBLIC_API_BASE_URL=http://localhost:3000`
 
-- Backend uses SQLite.
-- Vision and nutrition adapters are stubbed.
-- Shared UI supports web + mobile in one codebase.
-- The frontend health check calls `http://localhost:3000/health`.
-- For mobile devices, replace `localhost` with your machine IP in `src/api/client.ts`.
+`EXPO_PUBLIC_API_BASE_URL` is used by the frontend API client so local/prod URLs can differ without code edits.
+
+## CI (GitHub Actions)
+
+Workflow file: `.github/workflows/ci.yml`
+
+On each push/PR it runs:
+- `npm ci`
+- `npm run ci` (root typecheck + server typecheck + server build)
+
+## Deploy Setup
+
+### Frontend (Vercel)
+
+Config file: `vercel.json`
+
+- Build command: `npx expo export --platform web`
+- Output directory: `dist`
+
+Set Vercel env var:
+- `EXPO_PUBLIC_API_BASE_URL=https://<your-render-api-domain>`
+
+### Backend (Render)
+
+Config file: `render.yaml`
+
+- Service root: `server/`
+- Build: `npm ci && npm run build`
+- Start: `npm run start`
+- Persistent disk mounted at `/var/data`
+- Uses `DATABASE_PATH=/var/data/homecook.db`
+
+Set Render env vars:
+- `JWT_SECRET`
+- `RESEND_API_KEY`
+- `EMAIL_FROM`
+
+## Simple Live Workflow
+
+1. Make UI/API changes locally.
+2. Run `npm run dev` and check locally.
+3. Commit and push to GitHub.
+4. CI runs automatically.
+5. Vercel/Render auto-deploy from `main`.
+6. Open live site URL.
+
+## Auth Features Included
+
+- Signup with `email + username + password`
+- Email verification code (+ resend)
+- Forgot password code (+ resend)
+- First-login onboarding: age + identity
