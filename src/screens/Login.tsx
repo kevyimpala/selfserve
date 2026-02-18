@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { supabase } from "../api/supabase";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
+import { ScreenContainer } from "../components/ScreenContainer";
 import { colors } from "../utils/theme";
 import { isStrongEnoughPassword, isValidEmail } from "../utils/validation";
 
@@ -173,55 +174,80 @@ export const Login = ({ mode, onModeChange, onAuthSuccess }: LoginProps) => {
   const isSignup = mode === "signup";
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{isSignup ? "Create Your Chef Account" : "Chef Login"}</Text>
-      <Text style={styles.subtitle}>
-        {isSignup ? "Start cooking smarter with Self Serve." : "Welcome back. Let's get cooking."}
-      </Text>
+    <ScreenContainer>
+      <View style={styles.container}>
+        <Text style={styles.title}>{isSignup ? "Create Your Chef Account" : "Chef Login"}</Text>
+        <Text style={styles.subtitle}>
+          {isSignup ? "Start cooking smarter with Self Serve." : "Welcome back. Let's get cooking."}
+        </Text>
 
-      <Input value={email} onChangeText={setEmail} placeholder="Email" autoCapitalize="none" keyboardType="email-address" />
+        <Input
+          value={email}
+          onChangeText={setEmail}
+          placeholder="Email"
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="email-address"
+          returnKeyType="next"
+        />
 
-      {!isForgotMode && isSignup ? (
-        <Input value={username} onChangeText={setUsername} placeholder="Username" autoCapitalize="none" />
-      ) : null}
+        {!isForgotMode && isSignup ? (
+          <Input
+            value={username}
+            onChangeText={setUsername}
+            placeholder="Username"
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="next"
+          />
+        ) : null}
 
-      {!isForgotMode ? <Input value={password} onChangeText={setPassword} placeholder="Password" secureTextEntry /> : null}
+        {!isForgotMode ? (
+          <Input
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Password"
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="done"
+          />
+        ) : null}
 
-      {info ? <Text style={styles.info}>{info}</Text> : null}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+        {info ? <Text style={styles.info}>{info}</Text> : null}
+        {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <Button
-        label={isForgotMode ? "Send Reset Email" : isSignup ? "Create Account" : "Sign In"}
-        onPress={submit}
-      />
+        <Button label={isForgotMode ? "Send Reset Email" : isSignup ? "Create Account" : "Sign In"} onPress={submit} />
 
-      {isSignup && !isForgotMode ? <Button label="Resend Verification" onPress={resendSignupEmail} variant="ghost" /> : null}
-      {isForgotMode ? <Button label="Resend Reset Email" onPress={resendResetEmail} variant="ghost" /> : null}
+        {isSignup && !isForgotMode ? <Button label="Resend Verification" onPress={resendSignupEmail} variant="ghost" /> : null}
+        {isForgotMode ? <Button label="Resend Reset Email" onPress={resendResetEmail} variant="ghost" /> : null}
 
-      {!isForgotMode ? (
+        {!isForgotMode ? (
+          <Button
+            label={isSignup ? "Already have an account?" : "Need an account?"}
+            onPress={() => onModeChange(isSignup ? "login" : "signup")}
+            variant="ghost"
+          />
+        ) : null}
+
         <Button
-          label={isSignup ? "Already have an account?" : "Need an account?"}
-          onPress={() => onModeChange(isSignup ? "login" : "signup")}
+          label={isForgotMode ? "Back to login" : "Forgot my password"}
+          onPress={() => {
+            setIsForgotMode((current) => !current);
+            setInfo(null);
+            setError(null);
+          }}
           variant="ghost"
         />
-      ) : null}
-
-      <Button
-        label={isForgotMode ? "Back to login" : "Forgot my password"}
-        onPress={() => {
-          setIsForgotMode((current) => !current);
-          setInfo(null);
-          setError(null);
-        }}
-        variant="ghost"
-      />
-    </View>
+      </View>
+    </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     gap: 10,
+    paddingBottom: 8,
     paddingTop: 6
   },
   title: {

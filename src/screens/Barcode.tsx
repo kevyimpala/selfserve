@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { invokeFunction } from "../api/functions";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
+import { ScreenContainer } from "../components/ScreenContainer";
 import { colors } from "../utils/theme";
 
 type NutritionData = {
@@ -37,20 +38,32 @@ export const Barcode = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Barcode</Text>
-      <Text style={styles.subtitle}>Nutrition lookup now uses a Supabase Edge Function.</Text>
-      <Input value={barcode} onChangeText={setBarcode} placeholder="Scan or enter barcode" />
-      <Button label="Lookup Nutrition" onPress={lookup} />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      {result ? <Text style={styles.result}>{JSON.stringify(result, null, 2)}</Text> : null}
-    </View>
+    <ScreenContainer>
+      <View style={styles.container}>
+        <Text style={styles.title}>Barcode</Text>
+        <Text style={styles.subtitle}>Nutrition lookup now uses a Supabase Edge Function.</Text>
+        <Input
+          value={barcode}
+          onChangeText={setBarcode}
+          placeholder="Scan or enter barcode"
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="number-pad"
+          returnKeyType="search"
+        />
+        <Button label="Lookup Nutrition" onPress={lookup} />
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {result ? <Text style={styles.result}>{JSON.stringify(result, null, 2)}</Text> : null}
+      </View>
+    </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    gap: 10
+    gap: 10,
+    paddingBottom: 8,
+    paddingTop: 6
   },
   title: {
     color: colors.accent1,

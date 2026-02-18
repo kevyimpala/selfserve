@@ -2,24 +2,20 @@
   "name": "homecook",
   "version": "0.1.0",
   "private": true,
-  "workspaces": [
-    "server"
-  ],
   "main": "expo/AppEntry",
   "scripts": {
-    "dev": "concurrently -k -n server,web \"npm run dev:server\" \"npm run dev:web -- --localhost\"",
+    "dev": "expo start --web --localhost",
     "dev:app": "expo start",
     "dev:web": "expo start --web",
-    "dev:server": "npm run dev --workspace server",
     "typecheck": "tsc --noEmit",
-    "typecheck:server": "npm run typecheck --workspace server",
-    "build:server": "npm run build --workspace server",
-    "ci": "npm run typecheck && npm run typecheck:server && npm run build:server"
+    "build:web": "expo export --platform web",
+    "ci": "npm run typecheck && npm run build:web"
   },
   "dependencies": {
     "@expo/metro-runtime": "~4.0.1",
     "@supabase/supabase-js": "^2.95.3",
     "expo": "~52.0.0",
+    "expo-av": "^16.0.8",
     "expo-status-bar": "~2.0.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
@@ -29,7 +25,6 @@
   "devDependencies": {
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
-    "concurrently": "^9.1.2",
     "typescript": "^5.6.3"
   }
 }

@@ -63,8 +63,9 @@ If using Supabase CLI:
 
 ## Deploy (Vercel)
 
-- Build: `npx expo export --platform web --non-interactive`
+- Build: `npx expo export --platform web`
 - Output: `dist`
 - Environment variables:
   - `EXPO_PUBLIC_SUPABASE_URL`
   - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+

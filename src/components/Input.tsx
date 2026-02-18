@@ -3,8 +3,15 @@ import { colors } from "../utils/theme";
 
 type InputProps = TextInputProps;
 
-export const Input = (props: InputProps) => {
-  return <TextInput style={styles.input} placeholderTextColor={colors.primary} {...props} />;
+export const Input = ({ style, multiline, ...props }: InputProps) => {
+  return (
+    <TextInput
+      style={[styles.input, multiline && styles.multiline, style]}
+      placeholderTextColor={colors.primary}
+      multiline={multiline}
+      {...props}
+    />
+  );
 };
 
 const styles = StyleSheet.create({
@@ -15,7 +22,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: colors.ink,
     fontSize: 16,
+    minHeight: 48,
     paddingHorizontal: 12,
     paddingVertical: 12
+  },
+  multiline: {
+    minHeight: 110,
+    textAlignVertical: "top"
   }
 });

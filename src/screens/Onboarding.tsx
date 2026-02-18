@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { supabase } from "../api/supabase";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
+import { ScreenContainer } from "../components/ScreenContainer";
 import { useSession } from "../state/session";
 import { colors } from "../utils/theme";
 
@@ -55,25 +56,28 @@ export const Onboarding = ({ onComplete }: OnboardingProps) => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Tell Us About You</Text>
-      <Text style={styles.subtitle}>Before you start cooking, we just need a quick profile setup.</Text>
-      <Input value={age} onChangeText={setAge} placeholder="Age" keyboardType="number-pad" />
-      <Input
-        value={identity}
-        onChangeText={setIdentity}
-        placeholder="How do you identify? (gender, pronouns, and however you define yourself)"
-        multiline
-      />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Button label="Save Profile" onPress={submit} />
-    </View>
+    <ScreenContainer>
+      <View style={styles.container}>
+        <Text style={styles.title}>Tell Us About You</Text>
+        <Text style={styles.subtitle}>Before you start cooking, we just need a quick profile setup.</Text>
+        <Input value={age} onChangeText={setAge} placeholder="Age" keyboardType="number-pad" returnKeyType="next" />
+        <Input
+          value={identity}
+          onChangeText={setIdentity}
+          placeholder="How do you identify? (gender, pronouns, and however you define yourself)"
+          multiline
+        />
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        <Button label="Save Profile" onPress={submit} />
+      </View>
+    </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     gap: 10,
+    paddingBottom: 8,
     paddingTop: 6
   },
   title: {

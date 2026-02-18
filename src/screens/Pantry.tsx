@@ -4,6 +4,7 @@ import { supabase } from "../api/supabase";
 import { Button } from "../components/Button";
 import { IngredientList, type Ingredient } from "../components/IngredientList";
 import { Input } from "../components/Input";
+import { ScreenContainer } from "../components/ScreenContainer";
 import { useSession } from "../state/session";
 import { colors } from "../utils/theme";
 import { isNonEmpty } from "../utils/validation";
@@ -84,24 +85,28 @@ export const Pantry = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Pantry</Text>
-      <Text style={styles.subtitle}>Track your ingredients and keep prep fast.</Text>
-      <Input value={name} onChangeText={setName} placeholder="Ingredient name" />
-      <Input value={quantity} onChangeText={setQuantity} placeholder="Quantity" keyboardType="numeric" />
-      <Button label="Add Ingredient" onPress={addItem} />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <IngredientList items={items} />
-      {items.length > 0 ? (
-        <Button label="Remove Last Item" onPress={() => void removeItem(items[0] as PantryRow)} variant="ghost" />
-      ) : null}
-    </View>
+    <ScreenContainer>
+      <View style={styles.container}>
+        <Text style={styles.title}>Pantry</Text>
+        <Text style={styles.subtitle}>Track your ingredients and keep prep fast.</Text>
+        <Input value={name} onChangeText={setName} placeholder="Ingredient name" returnKeyType="next" />
+        <Input value={quantity} onChangeText={setQuantity} placeholder="Quantity" keyboardType="numeric" returnKeyType="done" />
+        <Button label="Add Ingredient" onPress={addItem} />
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        <IngredientList items={items} />
+        {items.length > 0 ? (
+          <Button label="Remove Last Item" onPress={() => void removeItem(items[0] as PantryRow)} variant="ghost" />
+        ) : null}
+      </View>
+    </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    gap: 10
+    gap: 10,
+    paddingBottom: 8,
+    paddingTop: 6
   },
   title: {
     color: colors.accent1,

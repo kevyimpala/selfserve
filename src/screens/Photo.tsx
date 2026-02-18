@@ -4,6 +4,7 @@ import { invokeFunction } from "../api/functions";
 import { supabase } from "../api/supabase";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
+import { ScreenContainer } from "../components/ScreenContainer";
 import { useSession } from "../state/session";
 import { colors } from "../utils/theme";
 
@@ -101,25 +102,29 @@ export const Photo = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Photo Upload</Text>
-      <Text style={styles.subtitle}>Supabase Storage/vision migration uses an Edge Function parser.</Text>
-      <Input value={imageBase64} onChangeText={setImageBase64} placeholder="Base64 image content" multiline />
-      <Button label="Parse Ingredients" onPress={submit} />
+    <ScreenContainer>
+      <View style={styles.container}>
+        <Text style={styles.title}>Photo Upload</Text>
+        <Text style={styles.subtitle}>Paste image base64 and parse ingredients.</Text>
+        <Input value={imageBase64} onChangeText={setImageBase64} placeholder="Base64 image content" multiline />
+        <Button label="Parse Ingredients" onPress={submit} />
 
-      <Input value={lookupId} onChangeText={setLookupId} placeholder="Lookup upload by ID" keyboardType="number-pad" />
-      <Button label="Fetch Upload" onPress={fetchUpload} variant="ghost" />
+        <Input value={lookupId} onChangeText={setLookupId} placeholder="Lookup upload by ID" keyboardType="number-pad" />
+        <Button label="Fetch Upload" onPress={fetchUpload} variant="ghost" />
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      {lastUploadId ? <Text style={styles.meta}>Last upload ID: {lastUploadId}</Text> : null}
-      {ingredients.length > 0 ? <Text style={styles.result}>{ingredients.join(", ")}</Text> : null}
-    </View>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {lastUploadId ? <Text style={styles.meta}>Last upload ID: {lastUploadId}</Text> : null}
+        {ingredients.length > 0 ? <Text style={styles.result}>{ingredients.join(", ")}</Text> : null}
+      </View>
+    </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    gap: 10
+    gap: 10,
+    paddingBottom: 8,
+    paddingTop: 6
   },
   title: {
     color: colors.accent1,

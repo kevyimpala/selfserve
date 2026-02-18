@@ -29,12 +29,13 @@ export const Button = ({ label, onPress, disabled = false, variant = "primary" }
 const styles = StyleSheet.create({
   button: {
     backgroundColor: colors.secondary1,
-    borderRadius: 14,
+    borderRadius: 12,
+    minHeight: 48,
     paddingHorizontal: 14,
     paddingVertical: 12
   },
   secondary: {
-    backgroundColor: colors.secondary2
+    backgroundColor: colors.accent2
   },
   ghost: {
     backgroundColor: "transparent",
@@ -49,10 +50,10 @@ const styles = StyleSheet.create({
   },
   label: {
     color: colors.white,
+    fontFamily: "TT Commons Pro",
     fontSize: 14,
     fontWeight: "700",
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
+    letterSpacing: 0.2,
     textAlign: "center"
   },
   ghostLabel: {
